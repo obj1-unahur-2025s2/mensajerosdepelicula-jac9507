@@ -1,9 +1,118 @@
-import example.pepita
+import example.*
 
-describe "group of tests for pepita" {
-
-  test "pepita has initial energy" {
-    assert.equals(100, pepita.energy())
+describe "Primera parte - Tests" {
+  test "Roberto puede entregar paquete pago en camión con 1 acoplado" {
+    roberto.modo = "camion"
+    roberto.acoplados = 1
+    paqueteOriginal.pagado = true
+    paqueteOriginal.destinoElegido = puenteBrooklyn
+    assert.that(roberto.puedeEntregar(paqueteOriginal))
   }
 
+  test "Neo con crédito no puede entregar paquete no pago a la Matrix" {
+    neo.tieneCredito = true
+    paqueteOriginal.pagado = false
+    paqueteOriginal.destinoElegido = laMatrix
+    assert.notThat(neo.puedeEntregar(paqueteOriginal))
+  }
+}
+
+describe "Segunda parte - Empresa" {
+  test "Contratar y despedir mensajero" {
+    empresa.contratar(roberto)
+    assert.that(empresa.mensajeros.contains(roberto))
+    empresa.despedir(roberto)
+    assert.notThat(empresa.mensajeros.contains(roberto))
+  }
+
+  test "Despedir a todos" {
+    empresa.contratar(roberto)
+    empresa.contratar(chuckNorris)
+    empresa.despedirATodos()
+    assert.equals(0, empresa.mensajeros.size())
+  }
+
+  test "Empresa es grande si tiene más de 2 mensajeros" {
+    empresa.contratar(roberto)
+    empresa.contratar(chuckNorris)
+    empresa.contratar(neo)
+    assert.that(empresa.esGrande())
+  }
+
+  test "Puede entregar el primero" {
+    empresa.despedirATodos()
+    empresa.contratar(chuckNorris)
+    paqueteOriginal.pagado = true
+    paqueteOriginal.destinoElegido = laMatrix
+    assert.that(empresa.puedeEntregarPrimero(paqueteOriginal))
+  }
+
+  test "Peso del último mensajero" {
+    empresa.despedirATodos()
+    empresa.contratar(roberto)
+    assert.equals(roberto.peso(), empresa.pesoUltimoMensajero())
+  }
+}
+
+
+describe "Mensajería recargada - Tests" {
+
+  test "Paquetito puede ser entregado por cualquier mensajero" {
+    assert.that(roberto.puedeEntregar(paquetito))
+    assert.that(chuckNorris.puedeEntregar(paquetito))
+    assert.that(neo.puedeEntregar(paquetito))
+  }
+
+  test "Paquetón no puede ser entregado si no está pago" {
+    paquetonViajero.pagado = 0
+    assert.notThat(chuckNorris.puedeEntregar(paquetonViajero))
+  }
+
+  test "Paquetón puede ser entregado si está pago y el mensajero pasa por todos" {
+    paquetonViajero.pagar(200)
+    assert.that(chuckNorris.puedeEntregar(paquetonViajero))
+  }
+
+  test "Empresa puede entregar si al menos un mensajero puede" {
+    empresa.despedirATodos()
+    empresa.contratar(chuckNorris)
+    paquetonViajero.pagar(200)
+    assert.that(empresa.puedeEntregar(paquetonViajero))
+  }
+
+  test "Empresa detecta sobrepeso si promedio > 500" {
+    roberto.pesoPropio = 600
+    empresa.despedirATodos()
+    empresa.contratar(roberto)
+    empresa.contratar(roberto)
+    assert.that(empresa.tieneSobrepeso())
+  }
+
+  test "Empresa envía paquete y factura si puede" {
+    empresa.facturacion = 0
+    paquetonViajero.pagar(200)
+    empresa.enviar(paquetonViajero)
+    assert.equals(200, empresa.facturacion)
+  }
+
+  test "Empresa acumula paquete pendiente si no puede enviarlo" {
+    empresa.despedirATodos()
+    empresa.enviar(paquetonViajero)
+    assert.that(empresa.paquetesPendientes.contains(paquetonViajero))
+  }
+
+  test "Empresa envía todos los paquetes" {
+    empresa.despedirATodos()
+    empresa.contratar(chuckNorris)
+    paquetonViajero.pagar(200)
+    empresa.enviarTodos([paquetito, paquetonViajero])
+    assert.equals(200, empresa.facturacion) // paquetito no suma
+  }
+
+  test "Empresa encuentra y envía el paquete pendiente más caro" {
+    empresa.paquetesPendientes = [paquetito, paquetonViajero]
+    paquetonViajero.pagar(200)
+    empresa.enviarMasCaroPendiente()
+    assert.notThat(empresa.paquetesPendientes.contains(paquetonViajero))
+  }
 }
